@@ -119,6 +119,10 @@ class TextClassificationModel:
 
 
 # Load the model
+import __main__
+__main__.TextCleaner = TextCleaner
+__main__.TextClassificationModel = TextClassificationModel
+
 nb_model = TextClassificationModel(model_type='naive_bayes')
 nb_model.load('src/nb_model.pkl')
 txt_cleaner =TextCleaner()
