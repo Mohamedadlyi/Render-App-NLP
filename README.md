@@ -21,7 +21,7 @@ This project Deploys an dialect classification algorithm Dashboard using Plotly 
  2. Run the `src/app.py` script:
     
     ```bash
-    python admin.py
+    python src/app.py
     ```
 ### Step 2: Open the Browser
 Open your web browser and navigate to the `http://localhost:8050` to interact with the application.
