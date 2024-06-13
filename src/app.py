@@ -120,7 +120,7 @@ class TextClassificationModel:
 
 # Load the model
 nb_model = TextClassificationModel(model_type='naive_bayes')
-nb_model.load('nb_model.pkl')
+nb_model.load('src/nb_model.pkl')
 txt_cleaner =TextCleaner()
 # Initialize Dash app
 app = dash.Dash(external_stylesheets=[dbc.themes.SLATE])
