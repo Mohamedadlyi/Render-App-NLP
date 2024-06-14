@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 
 def main(argc, argv):
     # Default values
-    default_main_dir = '/kaggle/input/arabic-dialect-db'
+    default_main_dir = '/input/arabic-dialect-db'
     default_model_types = ['logistic', 'naive_bayes', 'deep_learning']
     default_save_paths = ['logistic_model.pkl', 'nb_model.pkl', 'dl_model.h5', 'tokenizer.pkl', 'label_encoder.pkl']
 
