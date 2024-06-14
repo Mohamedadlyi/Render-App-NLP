@@ -17,7 +17,7 @@ python train.py
 ```
 
 This will use the following defaults:
-- Data directory: `/kaggle/input/arabic-dialect-db`
+- Data directory: `/input/arabic-dialect-db`
 - Models: `logistic`, `naive_bayes`, `deep_learning`
 - Save paths: `logistic_model.pkl`, `nb_model.pkl`, `dl_model.h5`, `tokenizer.pkl`, `label_encoder.pkl`
 
@@ -30,7 +30,7 @@ python script.py <data_directory> <model_types> <save_path1> <save_path2> <save_
 ```
 
 #### Arguments:
-- `<data_directory>`: Path to the directory containing the dataset (default: `/kaggle/input/arabic-dialect-db`)
+- `<data_directory>`: Path to the directory containing the dataset (default: `/input/arabic-dialect-db`)
 - `<model_types>`: Comma-separated list of models to train (options: `logistic`, `naive_bayes`, `deep_learning`)
 - `<save_path1>`: Path to save the logistic regression model (default: `logistic_model.pkl`)
 - `<save_path2>`: Path to save the Naive Bayes model (default: `nb_model.pkl`)
