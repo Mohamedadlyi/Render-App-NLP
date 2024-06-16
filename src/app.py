@@ -79,7 +79,7 @@ class TextCleaner(BaseEstimator, TransformerMixin):
     def remove_extra_spaces(text):
         return ' '.join(text.split())
 
-# Model 
+# Model
 class TextClassificationModel:
     def __init__(self, model_type='logistic'):
         self.model_type = model_type
@@ -116,29 +116,55 @@ class TextClassificationModel:
     def predict(self, text):
         return self.pipeline.predict([text])
 
-
-
-# Load the model
+# Load the models
 import __main__
 __main__.TextCleaner = TextCleaner
 __main__.TextClassificationModel = TextClassificationModel
 
+logistic_model = TextClassificationModel(model_type='logistic')
+logistic_model.load('src/logistic_model.pkl')
+
 nb_model = TextClassificationModel(model_type='naive_bayes')
 nb_model.load('src/nb_model.pkl')
-txt_cleaner =TextCleaner()
+
+txt_cleaner = TextCleaner()
+
 # Initialize Dash app
 app = dash.Dash(external_stylesheets=[dbc.themes.SLATE])
+app.css.append_css({
+    'external_url': 'https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css'
+})
 server = app.server
 
 # Define the layout of the app
 app.layout = dbc.Container([
+    dbc.Button("Options", id="open-sidebar", n_clicks=0),
+    dbc.Offcanvas(
+        [
+            html.H5("Choose a model",  style={"color": "gold", "fontWeight": "bold"}),
+            dbc.RadioItems(
+                id='model-choice',
+                options=[
+                    {'label': 'Logistic Regression', 'value': 'logistic'},
+                    {'label': 'Naive Bayes', 'value': 'naive_bayes'},
+                ],
+                value='logistic',
+                inline=True,
+                style={"color": "white"}
+            ),
+        ],
+        id="sidebar",
+        title="Options",
+        is_open=False,
+        style={"backgroundColor": "k", "color": "white"}
+    ),
     dbc.Row([
         dbc.Col([
-            html.H1("تخمين اللهجات العربية",  style={'textAlign': 'center', 'marginTop': '50px', 'marginBottom': '20px', 'color': 'gold', 'fontWeight': 'bold'})
+            html.H1("تخمين اللهجات العربية", style={'textAlign': 'center', 'marginTop': '50px', 'marginBottom': '20px', 'color': 'gold', 'fontWeight': 'bold'})
         ])
     ]),
     dbc.Row([
-        html.Div(style={"height": "20px"}), 
+        html.Div(style={"height": "20px"}),
         dbc.Col([
             html.H2("(مصري - ليبي - مغربي - سوداني- لبناني)", style={'textAlign': 'center', 'marginBottom': '30px', 'color': 'gold', 'fontWeight': 'bold'})
         ])
@@ -146,46 +172,55 @@ app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             html.Div(style={"height": "50px"}),
-            dcc.Textarea( 
+            dcc.Textarea(
                 id="text-input",
                 placeholder="رجاء إدخال نص عربي",
-                className='dark-textarea', 
+                className='dark-textarea',
             ),
             dbc.Row([
-                html.Div(style={"height": "10px"}),   
-                dbc.Col(dbc.Button(" تخمين", id="predict-button", color="light", className=' btn-primary ms-auto', style={"width":  "190px"} )),
-                dbc.Col(html.Button("مسح", id="reset-button", n_clicks=0, className='btn btn-danger'))]),
-            dbc.Row([ 
-                html.Div(style={"height": "10px"}),   
+                html.Div(style={"height": "10px"}),
+                dbc.Col(dbc.Button("تخمين", id="predict-button", color="light", className='btn-primary ms-auto', style={"width": "190px"})),
+                dbc.Col(html.Button("مسح", id="reset-button", n_clicks=0, className='btn btn-danger'))
+            ]),
+            dbc.Row([
+                html.Div(style={"height": "10px"}),
                 dbc.Col(html.Div(id="prediction-alert"), width=20)
-                ])
+            ])
         ], width="12")
     ]),
-    dbc.Row([dcc.Graph(id="probability-graph")] 
-        )
-    ])
+    dbc.Row([dcc.Graph(id="probability-graph")])
+])
 
-
-def empty_fig(fig= None, alert = None, text = ''):
+def empty_fig(fig=None, alert=None, text=''):
     fig = go.Figure()
     fig.update_layout(
         xaxis=dict(showgrid=False, visible=False, showticklabels=False),
         yaxis=dict(showgrid=False, visible=False, showticklabels=False),
-        plot_bgcolor='rgba(0,0,0,0)',  # Transparent plot background
+        plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)'
     )
     return fig, alert, text
 
+@app.callback(
+    Output("sidebar", "is_open"),
+    [Input("open-sidebar", "n_clicks")],
+    [State("sidebar", "is_open")]
+)
+def toggle_sidebar(n, is_open):
+    if n:
+        return not is_open
+    return is_open
 
 @app.callback(
     [Output("probability-graph", "figure"),
      Output("prediction-alert", "children"),
      Output("text-input", "value")],
     [Input("predict-button", "n_clicks"),
-     Input("reset-button", "n_clicks")],
+     Input("reset-button", "n_clicks"),
+     Input('model-choice', 'value')],
     [State("text-input", "value")]
 )
-def update_output(predict_clicks, reset_clicks, text):
+def update_output(predict_clicks, reset_clicks, selected_model, text):
     ctx = dash.callback_context
     if not ctx.triggered:
         button_id = None
@@ -196,26 +231,27 @@ def update_output(predict_clicks, reset_clicks, text):
         return dash.no_update, None, text
     elif button_id == "predict-button":
         if txt_cleaner.clean_text(text) == '':
-            alert = dbc.Alert("نص غير عربي", color="cyan", className="d-grid gap-2 col-6 mx-auto", style={'textAlign': 'center', 'marginTop': '50px','marginBottom': '30px', 'color': 'black', 'fontWeight': 'bold', 'fontSize': '20px'})
-            print('me')
+            alert = dbc.Alert("نص غير عربي", color="cyan", className="d-grid gap-2 col-6 mx-auto", style={'textAlign': 'center', 'marginTop': '50px', 'marginBottom': '30px', 'color': 'black', 'fontWeight': 'bold', 'fontSize': '20px'})
             return empty_fig(alert, 'نص غير عربي , رجاء إدخال نص عربي')
-        probs = nb_model.pipeline.predict_proba(text)[0]
+
+        model = logistic_model if selected_model == 'logistic' else nb_model
+        probs = model.pipeline.predict_proba([text])[0]
         target_names = ['مصري', 'لبناني', 'ليبي', 'مغربي', 'سوداني']
-   
+
         fig = px.bar(x=target_names, y=probs, labels={'x': 'الدولة', 'y': 'الاحتمال'}, title='نسبة التأكد من التخمين')
 
         fig.update_traces(marker_color=['cyan' if label == target_names[probs.argmax()] else 'beige' for label in target_names],
                           text=probs, texttemplate='%{text:.2f}', textposition='outside', textfont_size=14, textfont_family='Arial', textfont_color='white')
-        
-        fig.update_layout(height=400, width=600, margin=dict(l=40, r=40, t=40, b=40), 
-                          title={'x':0.5, 'xanchor': 'center', 'font': {'size': 20, 'family': 'Arial', 'color': 'white'}},
+
+        fig.update_layout(height=400, width=600, margin=dict(l=40, r=40, t=40, b=40),
+                          title={'x': 0.5, 'xanchor': 'center', 'font': {'size': 20, 'family': 'Arial', 'color': 'white'}},
                           plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-                          xaxis={'title': {'text': 'الدولة', 'font': {'size': 28, 'family': 'Arial', 'color': 'white'}}, 
+                          xaxis={'title': {'text': 'الدولة', 'font': {'size': 28, 'family': 'Arial', 'color': 'white'}},
                                  'tickfont': {'size': 20, 'family': 'Arial', 'color': 'white'}},
-                          yaxis={'title': {'text': 'الاحتمال', 'font': {'size': 24, 'family': 'Arial', 'color': 'white'}}, 
+                          yaxis={'title': {'text': 'الاحتمال', 'font': {'size': 24, 'family': 'Arial', 'color': 'white'}},
                                  'tickfont': {'size': 14, 'family': 'Arial', 'color': 'white'}})
 
-        alert = dbc.Alert(f"التنبؤ: {target_names[probs.argmax()]}", color="cyan", className="d-grid gap-2 col-6 mx-auto", style={'textAlign': 'center', 'marginTop': '50px','marginBottom': '30px', 'color': 'black', 'fontWeight': 'bold', 'fontSize': '20px'})
+        alert = dbc.Alert(f"التنبؤ: {target_names[probs.argmax()]}", color="cyan", className="d-grid gap-2 col-6 mx-auto", style={'textAlign': 'center', 'marginTop': '50px', 'marginBottom': '30px', 'color': 'black', 'fontWeight': 'bold', 'fontSize': '20px'})
         return fig, alert, text
     elif button_id == "reset-button":
         return empty_fig()
